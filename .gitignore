@@ -1,3 +1,7 @@
 reponames.csv
 /git
+/venv
 config.yaml
+*.ods
+__pycache__
+id_rsa*
