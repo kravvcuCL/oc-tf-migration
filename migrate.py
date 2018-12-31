@@ -117,7 +117,10 @@ def clone_repos(repos, remove=False):
         os.makedirs(str(repo_path.parent), exist_ok=True)
         if remove:
             print('Removing repo dir:', str(repo_path))
-            shutil.rmtree(str(repo_path))
+            try:
+                shutil.rmtree(str(repo_path))
+            except FileNotFoundError:
+                pass
         try:
             exec(['git', '-C', str(repo_path), 'fetch', '--all'])
             exec(['git', '-C', str(repo_path), 'pull'])
@@ -222,22 +225,25 @@ def main():
     args = parser.parse_args()
     dry_run = args.dry_run
     read_config()
-    repos, github_repos, obj = extract_reponames(suffix='-preview')
+    # 1. Load repos list
+    repos, github_repos, obj = extract_reponames(suffix=cfg['org_suffix'])
     if args.single_repo:
         obj = filter_repos(obj, [args.single_repo])
         print('Repos after filtering:', obj)
-    #print(repos)
-    #print(github_repos)
+    # 2. Load active branches from Zuul config
     active_branches = get_active_branches()
     print('Active branches:', active_branches)
+    # 3. Clone/sync repos
     if cfg['clone']:
         clone_repos(obj, remove=args.full_reclone)
+    # 4. Squash history
     squash_all(obj, active_branches)
     repos_fqdn = [(cfg['old_hostname'] + '/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in repos]
     github_repos_fqdn = [('github.com/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in github_repos]
     sr = sorted(repos + github_repos + repos_fqdn + github_repos_fqdn, key=lambda x: len(x[0]), reverse=True)
-    #print(sr)
-    #patch('Juniper/contrail-project-config', 'master', sr)
+    # 5. Apply patches
+    patch('Juniper/contrail-project-config', 'master', sr)
+    # Push
     push_all(obj, active_branches, dry_run=dry_run)
 
 
