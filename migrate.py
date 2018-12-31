@@ -1,5 +1,6 @@
 import argparse
 import csv
+import sys
 import os
 import subprocess
 import yaml
@@ -92,7 +93,9 @@ def extract_reponames(suffix=''):
         for row in reader:
             old_org = row[0]
             new_org = row[2] + suffix
-            repo = Repo(old_org, row[1], new_org, row[3])
+            gerrit = row[4].lower() != 'no'
+            remote = cfg['old_hostname']['gerrit'] if gerrit else cfg['old_hostname']['github']
+            repo = Repo(old_org, row[1], new_org, row[3], remote)
             old = '{}/{}'.format(old_org, row[1])
             new = '{}/{}'.format(new_org, row[3])
             if row[4].lower() == 'no':
@@ -123,7 +126,6 @@ def clone_repos(repos, remove=False):
                 pass
         try:
             exec(['git', '-C', str(repo_path), 'fetch', '--all'])
-            exec(['git', '-C', str(repo_path), 'pull'])
         except subprocess.CalledProcessError:
             exec(['git', 'clone', old_url + '/' + repo.old_full_name(), repo.old_full_name()], old_dir)
 
@@ -143,6 +145,12 @@ def get_old_repo_path(repo):
     return str(repo_path)
 
 
+def get_git_repo(repo):
+    path = get_old_repo_path(repo)
+    print(path)
+    return  pygit2.Repository(path)
+
+
 def branch_in_repo(repo, branch):
     path = get_old_repo_path(repo)
     print(path)
@@ -158,7 +166,7 @@ def squash(repo, branch):
 
 
 def is_branch_migrated(repo, branch):
-    skipped = branch in cfg['skip_branches'].get(repo, [])
+    skipped = branch in cfg['skip_branches'].get(repo.old_full_name(), [])
     inrepo = branch_in_repo(repo, branch)
     return inrepo and not skipped
 
@@ -168,29 +176,55 @@ def squash_all(repos, branches):
         for branch in branches:
             if is_branch_migrated(repo, branch):
                 squash(repo, branch)
+                print('OK:', branch, 'branch found in repo', repo.old_full_name())
             else:
-                print('branch', branch, 'not in repo', repo.old_full_name())
+                print('MISSING:', branch, 'branch not found in repo', repo.old_full_name())
 
 
 def sed_dir(pattern_from, pattern_to, path):
-    cmd = ['bash', '-c', 'find . -not -path \'*/\.git*\' -type f -print0 | xargs -0 -n1 sed -i -s \'s:{}:{}:g\''.format(pattern_from, pattern_to)]
+    paths = ['./playbooks/*', './roles/*', './zuul.d/*', './zuul/*', './zuul.yaml', './.zuul.yaml']
+    paths_exp = ' -o '.join(['-path "' + p + '"' for p in paths])
+    cmd = ['bash', '-c', 'find . -not -path \'*/\.git*\' -type f \( ' + paths_exp + ' \) -print0 | xargs -0 -n1 -r sed -i -s \'s:{}:{}:g\''.format(pattern_from, pattern_to)]
     print(cmd)
     exec(cmd, cwd=path)
 
 
+def generate_replacement_list(all_repos):
+    reps = []
+    reps_fqdn = []
+    for repo in all_repos:
+        reps.append((repo.old_full_name(), repo.new_full_name()))
+        reps_fqdn.append((repo.old_remote + '/' + repo.old_full_name(), cfg['new_hostname'] + '/' + repo.new_full_name()))
+    len_sorter = lambda x: len(x[0])
+    sr = sorted(reps_fqdn, key=len_sorter, reverse=True) + sorted(reps, key=len_sorter, reverse=True)
+    return sr
+
+
 def patch(repo, branch, repos):
-    repo_path = get_old_repo_path_(repo)
-    patch_path = os.getcwd() + '/patches/' + repo.split('/')[-1] + '.patch'
-    print(patch_path)
+    repo_path = get_old_repo_path(repo)
+    patch_path = os.getcwd() + '/patches/' + repo.old_name + '.patch'
+    print('Patches path:', patch_path)
+    cmd = ['git', 'checkout', branch]
+    exec(cmd, cwd=repo_path)
     if os.path.exists(patch_path):
         print('Applying patch:', patch_path)
         exec(['git', 'apply', patch_path], repo_path)
-    for old, new in repos:
-        sed_dir(old, new, repo_path)
+    for from_pattern, to_pattern in generate_replacement_list(repos):
+        sed_dir(from_pattern, to_pattern, repo_path)
     cmd = ['git', 'add', '-A']
     exec(cmd, cwd=repo_path)
     cmd = ['git', 'commit', '-m', '.']
-    exec(cmd, cwd=repo_path)
+    try:
+        exec(cmd, cwd=repo_path)
+    except Exception:
+        print('No changes?')
+
+
+def patch_all(repos, active_branches, all_repos):
+    for repo in repos:
+        for branch in active_branches:
+            if is_branch_migrated(repo, branch):
+                patch(repo, branch, all_repos)
 
 
 def push(repo, branches, dry_run=True):
@@ -227,9 +261,13 @@ def main():
     read_config()
     # 1. Load repos list
     repos, github_repos, obj = extract_reponames(suffix=cfg['org_suffix'])
+    all_repos = obj.copy()
     if args.single_repo:
         obj = filter_repos(obj, [args.single_repo])
         print('Repos after filtering:', obj)
+    #for r in obj:
+    #    print(r.old_full_name())
+    #sys.exit(0)
     # 2. Load active branches from Zuul config
     active_branches = get_active_branches()
     print('Active branches:', active_branches)
@@ -237,12 +275,12 @@ def main():
     if cfg['clone']:
         clone_repos(obj, remove=args.full_reclone)
     # 4. Squash history
-    squash_all(obj, active_branches)
-    repos_fqdn = [(cfg['old_hostname'] + '/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in repos]
-    github_repos_fqdn = [('github.com/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in github_repos]
-    sr = sorted(repos + github_repos + repos_fqdn + github_repos_fqdn, key=lambda x: len(x[0]), reverse=True)
+    #squash_all(obj, active_branches)
+    #repos_fqdn = [(cfg['old_hostname'] + '/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in repos]
+    #github_repos_fqdn = [('github.com/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in github_repos]
+    #sr = sorted(repos + github_repos + repos_fqdn + github_repos_fqdn, key=lambda x: len(x[0]), reverse=True)
     # 5. Apply patches
-    patch('Juniper/contrail-project-config', 'master', sr)
+    #patch_all(obj, active_branches, all_repos)
     # Push
     push_all(obj, active_branches, dry_run=dry_run)
 

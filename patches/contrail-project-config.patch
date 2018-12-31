@@ -1,52 +1,84 @@
-diff --git a/zuul/main.yaml b/zuul/main.yaml
-index 1d28e8f..e298064 100644
---- a/zuul/main.yaml
-+++ b/zuul/main.yaml
-@@ -6,7 +6,6 @@
-         untrusted-projects:
-           - Juniper/zuul-jobs:
-               shadow: Juniper/contrail-project-config
--          - Juniper/contrail-nova-extensions
-           - Juniper/contrail-publisher
-           - Juniper/zuul:
-               exclude:  ['pipeline', 'job', 'semaphore', 'project', 'secret', 'project-template', 'nodeset']
-@@ -31,7 +30,6 @@
-           - Juniper/contrail-controller
-           - Juniper/contrail-deployers-containers
-           - Juniper/contrail-dev-env
--          - Juniper/contrail-docker
-           - Juniper/contrail-docs
-           - Juniper/contrail-dpdk
-           - Juniper/contrail-fabric-utils
-@@ -39,7 +37,6 @@
-           - Juniper/contrail-go-api
-           - Juniper/contrail-heat
-           - Juniper/contrail-helm-deployer
--          - Juniper/contrail-horizon
-           - Juniper/contrail-infra
-           - Juniper/contrail-infra-doc
-           - Juniper/contrail-java-api
-@@ -48,14 +45,10 @@
-           - Juniper/contrail-neutron-plugin
-           - Juniper/contrail-nova-vif-driver
-           - Juniper/contrail-packages
--          - Juniper/contrail-packaging
-           - Juniper/contrail-provisioning
--          - Juniper/contrail-puppet
-           - Juniper/contrail-sandesh
--          - Juniper/contrail-server-manager
-           - Juniper/contrail-specs
-           - Juniper/contrail-test
--          - Juniper/contrail-test-ci
-           - Juniper/contrail-third-party
-           - Juniper/contrail-third-party-cache
-           - Juniper/contrail-third-party-packages
-@@ -81,8 +74,5 @@
-               exclude:  ['pipeline', 'job', 'semaphore', 'project', 'secret', 'project-template', 'nodeset']
-           - Juniper/openstack-helm-infra:
-               exclude:  ['pipeline', 'job', 'semaphore', 'project', 'secret', 'project-template', 'nodeset']
--          - Juniper/puppet-contrail
-           - Juniper/vijava
--          - tungstenfabric/contrail-ci-test
--          - tungstenfabric/docs
-           - tungstenfabric/tungsten-test-runner
+diff --git a/zuul.d/jobs.yaml b/zuul.d/jobs.yaml
+index bf8e5b9..5bfacca 100644
+--- a/zuul.d/jobs.yaml
++++ b/zuul.d/jobs.yaml
+@@ -113,7 +113,6 @@
+       - Juniper/contrail-vro-plugin
+       - Juniper/contrail-web-controller
+       - Juniper/contrail-web-core
+-      - Juniper/contrail-web-server-manager
+       - Juniper/contrail-web-storage
+       - Juniper/contrail-webui-third-party
+       - Juniper/vijava
+@@ -156,7 +155,6 @@
+       - Juniper/contrail-vro-plugin
+       - Juniper/contrail-web-controller
+       - Juniper/contrail-web-core
+-      - Juniper/contrail-web-server-manager
+       - Juniper/contrail-web-storage
+       - Juniper/contrail-webui-third-party
+       - Juniper/vijava
+diff --git a/zuul.d/projects.yaml b/zuul.d/projects.yaml
+index 19c4e9b..4e6a8bb 100644
+--- a/zuul.d/projects.yaml
++++ b/zuul.d/projects.yaml
+@@ -366,11 +366,6 @@
+     templates:
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-puppet
+-    templates:
+-      - systests
+-
+ - project:
+     name: Juniper/contrail-heat
+     templates:
+@@ -382,22 +377,11 @@
+     templates:
+       - build-container
+ 
+-- project:
+-    name: Juniper/contrail-horizon
+-    templates:
+-      - systests
+-
+ - project:
+     name: Juniper/contrail-test-ci
+     templates:
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-docker
+-    templates:
+-      - systests
+-      # validate-ansible
+-
+ - project:
+     name: Juniper/contrail-ansible
+     templates:
+@@ -496,12 +480,6 @@
+       - unittests-webui
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-web-server-manager
+-    templates:
+-      - unittests-webui
+-      - systests
+-
+ - project:
+     name: Juniper/contrail-web-storage
+     templates:
+@@ -514,11 +492,6 @@
+       - unittests-webui
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-server-manager
+-    templates:
+-      - noops
+-
+ - project:
+     name: Juniper/contrail-kolla-ansible
+     templates:
