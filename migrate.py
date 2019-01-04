@@ -8,6 +8,7 @@ import pathlib
 import pygit2
 import jinja2
 import shutil
+import glob
 from jinja2 import Template
 
 
@@ -202,13 +203,15 @@ def generate_replacement_list(all_repos):
 
 def patch(repo, branch, repos):
     repo_path = get_old_repo_path(repo)
-    patch_path = os.getcwd() + '/patches/' + repo.old_name + '.patch'
-    print('Patches path:', patch_path)
+    patches_path = os.getcwd() + '/patches/' + repo.old_name
+    print('Patches path:', patches_path)
     cmd = ['git', 'checkout', branch]
     exec(cmd, cwd=repo_path)
-    if os.path.exists(patch_path):
-        print('Applying patch:', patch_path)
-        exec(['git', 'apply', patch_path], repo_path)
+    if os.path.isdir(patches_path):
+        print('Applying patches from:', patches_path)
+        for p in glob.glob(patches_path + '/*.patch'):
+            print('Applying patch:', p)
+            exec(['git', 'apply', p], repo_path)
     for from_pattern, to_pattern in generate_replacement_list(repos):
         sed_dir(from_pattern, to_pattern, repo_path)
     cmd = ['git', 'add', '-A']
@@ -241,9 +244,12 @@ def push(repo, branches, dry_run=True):
     for branch in branches:
         if is_branch_migrated(repo, branch):
             cmd = ['git', 'push', 'new', branch]
+            cmd2 = ['git', 'push', 'new', 'refs/replace/*:refs/replace/*']
             print(cmd)
+            print(cmd2)
             if not dry_run:
                 exec(cmd, cwd=path)
+                exec(cmd2, cwd=path)
 
 
 def push_all(repos, branches, dry_run=True):
@@ -275,12 +281,12 @@ def main():
     if cfg['clone']:
         clone_repos(obj, remove=args.full_reclone)
     # 4. Squash history
-    #squash_all(obj, active_branches)
+    squash_all(obj, active_branches)
     #repos_fqdn = [(cfg['old_hostname'] + '/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in repos]
     #github_repos_fqdn = [('github.com/' + r[0], cfg['new_hostname'] + '/' + r[1]) for r in github_repos]
     #sr = sorted(repos + github_repos + repos_fqdn + github_repos_fqdn, key=lambda x: len(x[0]), reverse=True)
     # 5. Apply patches
-    #patch_all(obj, active_branches, all_repos)
+    patch_all(obj, active_branches, all_repos)
     # Push
     push_all(obj, active_branches, dry_run=dry_run)
 
