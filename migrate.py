@@ -182,8 +182,11 @@ def squash_all(repos, branches):
                 print('MISSING:', branch, 'branch not found in repo', repo.old_full_name())
 
 
-def sed_dir(pattern_from, pattern_to, path):
-    paths = ['./playbooks/*', './roles/*', './zuul.d/*', './zuul/*', './zuul.yaml', './.zuul.yaml']
+def sed_dir(pattern_from, pattern_to, path, whole_repo=False):
+    if whole_repo:
+        paths = ['*']
+    else:
+        paths = ['./playbooks/*', './roles/*', './zuul.d/*', './zuul/*', './zuul.yaml', './.zuul.yaml']
     paths_exp = ' -o '.join(['-path "' + p + '"' for p in paths])
     cmd = ['bash', '-c', 'find . -not -path \'*/\.git*\' -type f \( ' + paths_exp + ' \) -print0 | xargs -0 -n1 -r sed -i -s \'s:{}:{}:g\''.format(pattern_from, pattern_to)]
     print(cmd)
@@ -203,17 +206,26 @@ def generate_replacement_list(all_repos):
 
 def patch(repo, branch, repos):
     repo_path = get_old_repo_path(repo)
-    patches_path = os.getcwd() + '/patches/' + repo.old_name
-    print('Patches path:', patches_path)
     cmd = ['git', 'checkout', branch]
     exec(cmd, cwd=repo_path)
+    # patches
+    patches_path = os.getcwd() + '/patches/{}/{}'.format(repo.old_name, branch)
+    print('Patches path:', patches_path)
     if os.path.isdir(patches_path):
         print('Applying patches from:', patches_path)
         for p in glob.glob(patches_path + '/*.patch'):
             print('Applying patch:', p)
             exec(['git', 'apply', p], repo_path)
+    # files
+    files_path = os.getcwd() + '/files/{}/{}/'.format(repo.old_name, branch)
+    print('File replacements path:', files_path)
+    if os.path.isdir(files_path):
+        print('Replacing files from:', files_path)
+        exec(['rsync', '-rv', files_path, repo_path])
+    # sed patterns
+    full_sed = repo.old_name in cfg['full_sed_repos']
     for from_pattern, to_pattern in generate_replacement_list(repos):
-        sed_dir(from_pattern, to_pattern, repo_path)
+        sed_dir(from_pattern, to_pattern, repo_path, full_sed)
     cmd = ['git', 'add', '-A']
     exec(cmd, cwd=repo_path)
     cmd = ['git', 'commit', '-m', '.']

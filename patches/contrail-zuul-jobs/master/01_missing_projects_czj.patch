@@ -1,0 +1,20 @@
+diff --git a/zuul.d/base-jobs.yaml b/zuul.d/base-jobs.yaml
+index a5b17a1..286ef81 100644
+--- a/zuul.d/base-jobs.yaml
++++ b/zuul.d/base-jobs.yaml
+@@ -23,7 +23,6 @@
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-specs
+       - Juniper/contrail-test
+       - Juniper/contrail-third-party
+@@ -67,7 +66,6 @@
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-specs
+       - Juniper/contrail-test
+       - Juniper/contrail-third-party

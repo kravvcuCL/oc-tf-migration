@@ -2,6 +2,8 @@
 set -x
 mydir=$(dirname "$0")
 branch=${1:-master}
+# remove replacements from previous runs
+git for-each-ref --format='delete %(refname)' refs/replace | git update-ref --stdin
 git checkout -f "origin/$branch"
 git branch -D "$branch"
 git checkout --orphan "$branch"

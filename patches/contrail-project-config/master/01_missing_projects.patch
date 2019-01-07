@@ -1,0 +1,119 @@
+diff --git a/zuul.d/jobs.yaml b/zuul.d/jobs.yaml
+index b5d230e..bdb507c 100644
+--- a/zuul.d/jobs.yaml
++++ b/zuul.d/jobs.yaml
+@@ -98,7 +98,6 @@
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-specs
+       - Juniper/contrail-test
+       - Juniper/contrail-third-party
+@@ -140,7 +139,6 @@
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-specs
+       - Juniper/contrail-test
+       - Juniper/contrail-third-party
+@@ -196,7 +194,6 @@
+       - Juniper/contrail-third-party
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-vrouter
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-common
+@@ -224,7 +221,6 @@
+       - Juniper/contrail-third-party
+       - Juniper/contrail-packages
+       - Juniper/contrail-provisioning
+-      - Juniper/contrail-sandesh
+       - Juniper/contrail-vrouter
+       - Juniper/contrail-nova-vif-driver
+       - Juniper/contrail-common
+diff --git a/zuul.d/projects.yaml b/zuul.d/projects.yaml
+index f99dea7..28417a5 100644
+--- a/zuul.d/projects.yaml
++++ b/zuul.d/projects.yaml
+@@ -297,12 +297,6 @@
+       jobs:
+         - contrail-vnc-build-package-rhel7-queens
+ 
+-- project:
+-    name: Juniper/contrail-sandesh
+-    templates:
+-      - unittests
+-      - systests
+-
+ - project:
+     name: Juniper/contrail-specs
+     templates:
+@@ -366,11 +360,6 @@
+     templates:
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-puppet
+-    templates:
+-      - systests
+-
+ - project:
+     name: Juniper/contrail-heat
+     templates:
+@@ -382,17 +371,6 @@
+     templates:
+       - build-container
+ 
+-- project:
+-    name: Juniper/contrail-horizon
+-    templates:
+-      - systests
+-
+-- project:
+-    name: Juniper/contrail-docker
+-    templates:
+-      - systests
+-      # validate-ansible
+-
+ - project:
+     name: Juniper/contrail-ansible
+     templates:
+@@ -411,11 +389,6 @@
+     templates:
+       - noops
+ 
+-- project:
+-    name: Juniper/puppet-contrail
+-    templates:
+-      - noops
+-
+ - project:
+     name: Juniper/contrail-project-config
+     templates:
+@@ -509,11 +482,6 @@
+       - unittests-webui
+       - systests
+ 
+-- project:
+-    name: Juniper/contrail-server-manager
+-    templates:
+-      - noops
+-
+ - project:
+     name: Juniper/contrail-kolla-ansible
+     templates:
+@@ -628,11 +596,6 @@
+     templates:
+       - noops
+ 
+-- project:
+-    name: tungstenfabric/docs
+-    templates:
+-      - noops
+-
+ - project:
+     name: tungstenfabric/tungsten-test-runner
+     check:

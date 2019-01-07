@@ -1,0 +1,4 @@
+# contrail-vnc patch preview
+sed -is 's/tungstenfabric-tools/tungstenfabric-tools-preview/g' files/contrail-vnc/master/default.xml
+sed -is 's/tungstenfabric\([^-]\)/tungstenfabric-preview\1/g' files/contrail-vnc/master/default.xml
+
